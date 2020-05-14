@@ -18,8 +18,7 @@ function(float a, int n_per,  double step, float temp, double * sum_array){
 	}
 
 	sum_array[threadIdx.x] = sum_part;
-
-	//__syncthreads();
+	__syncthreads();
 
 }
 
@@ -44,6 +43,7 @@ int main(int argc, char **argv){
 	//create sum on global mem
 	double sum = 0.0;
 	double *sum_array;
+	
 	rv = cudaMalloc(&sum_array, n_threads * sizeof(double));
 	assert(rv == cudaSuccess);
 	double *sum_temp = (double *)malloc(n_threads * sizeof(double));
@@ -54,7 +54,7 @@ int main(int argc, char **argv){
 	//and have it set to 0
 	//cuda kernel call
 	function<<<1, n_threads>>>(a, n_per, step, temp, sum_array);
-	cudaMemcpy(sum_temp, sum_array, n_threads * sizeof(double), cudaMemcpyDeviceToHost);
+	cudaMemcpy(sum_temp, sum_array, n_threads*sizeof(double), cudaMemcpyDeviceToHost);
 	for(int i = 0; i < n_threads; i++){
 		sum += sum_temp[i];
 	}
