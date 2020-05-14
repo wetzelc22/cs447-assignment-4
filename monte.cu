@@ -6,14 +6,9 @@
 #include <cassert>
 
 __global__ void
-function(int n, int n_threads, double step, double * sum_array){
-	double temp = (step * n) / n_threads;
-	double start = temp * threadIdx.x;
-	double x = start;
+function(float a, int n_per,  double step, float temp, double * sum_array){
 	double sum_part = 0.0;
-
-	double n_per = n / n_threads;
-
+	double x = a + (temp * (threadIdx.x));
 	for(int i = 0; i < n_per; i++){
 		if(x != 0.0){
 			double val = sin(x)/x;
@@ -24,7 +19,7 @@ function(int n, int n_threads, double step, double * sum_array){
 
 	sum_array[threadIdx.x] = sum_part;
 
-	__syncthreads();
+	//__syncthreads();
 
 }
 
@@ -45,7 +40,7 @@ int main(int argc, char **argv){
 	//Here the number of steps per thread is calculated and the size of each subsection is also calculated and set to temp
 	float temp  = std::abs((b-a)) / n_threads;
 	double step = (b-a)/n;
-
+	int n_per = n / n_threads;
 	//create sum on global mem
 	double sum = 0.0;
 	double *sum_array;
@@ -58,9 +53,10 @@ int main(int argc, char **argv){
 	cudaMemcpy(sum_array, sum_temp, n_threads * sizeof(double), cudaMemcpyHostToDevice);
 	//and have it set to 0
 	//cuda kernel call
-	function<<<1, n_threads>>>(n, n_threads, step, sum_array);
+	function<<<1, n_threads>>>(a, n_per, step, temp, sum_array);
+	cudaMemcpy(sum_temp, sum_array, n_threads * sizeof(double), cudaMemcpyDeviceToHost);
 	for(int i = 0; i < n_threads; i++){
-		sum += sum_array[i];
+		sum += sum_temp[i];
 	}
 	//Here the different values of the trapezoidal rule are calculated to give the result as "answer"
 	double val2 = 0.0; 
