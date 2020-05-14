@@ -1,8 +1,5 @@
 #include <cuda.h>
 #include <cmath>
-#include <thread>
-#include <random>
-#include <vector>
 #include <iostream>
 #include <memory>
 #include <limits>
@@ -45,9 +42,7 @@ int main(int argc, char **argv){
 	int n_threads = std::stoull(argv[4]);
 	if(n_threads < 1) {std::cerr << "Incorrect number of arguments" << std::endl; return EINVAL;};
 	//Here the number of steps per thread is calculated and the size of each subsection is also calculated and set to temp
-	int n_per = n / n_threads;
 	float temp  = std::abs((b-a)) / n_threads;
-	float y = a;
 	double step = (b-a)/n;
 
 	//create sum on global mem
@@ -70,7 +65,7 @@ int main(int argc, char **argv){
 	val2 = val2 / 2;
 	typedef std::numeric_limits< double > dbl;
 	std::cout.precision(dbl::max_digits10);
-	double answer = step * (val2 + sum + val3);
+	double answer = step * (val2 + (*sum) + val3);
 	std::cout << answer << std::endl;
 
 	rv = cudaFree(sum);
