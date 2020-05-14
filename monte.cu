@@ -3,9 +3,10 @@
 #include <iostream>
 #include <memory>
 #include <limits>
+#include <cassert>
 
 __global__ void
-function(int n, int n_threads, double step, double * sum){
+function(int n, int n_threads, double step, double * sum_array){
 	double temp = (step * n) / n_threads;
 	double start = temp * threadIdx.x;
 	double x = start;
@@ -21,7 +22,7 @@ function(int n, int n_threads, double step, double * sum){
 		x += step;
 	}
 
-	atomicAdd(sum, sum_part);
+	sum_array[threadIdx.x] = sum_part;
 
 	__syncthreads();
 
@@ -46,16 +47,21 @@ int main(int argc, char **argv){
 	double step = (b-a)/n;
 
 	//create sum on global mem
-	double * sum;
-	rv = cudaMalloc(&sum, sizeof(double));
+	double sum = 0.0;
+	double *sum_array;
+	rv = cudaMalloc(&sum_array, n_threads * sizeof(double));
 	assert(rv == cudaSuccess);
-	double *sum_temp = (double *)malloc(sizeof(double));
-	*sum_temp = 0;
-	cudaMemcpy(sum, sum_temp, sizeof(double), cudaMemcpyHostToDevice);
+	double *sum_temp = (double *)malloc(n_threads * sizeof(double));
+	for(int i = 0; i < n_threads; i++){
+		sum_temp[i] = 0.0;
+	}
+	cudaMemcpy(sum_array, sum_temp, n_threads * sizeof(double), cudaMemcpyHostToDevice);
 	//and have it set to 0
 	//cuda kernel call
-	function<<<1, n_threads>>>(n, n_threads, step, sum);
-
+	function<<<1, n_threads>>>(n, n_threads, step, sum_array);
+	for(int i = 0; i < n_threads; i++){
+		sum += sum_array[i];
+	}
 	//Here the different values of the trapezoidal rule are calculated to give the result as "answer"
 	double val2 = 0.0; 
 	if(a != 0) val2 = (sin(a)/a);
@@ -65,10 +71,10 @@ int main(int argc, char **argv){
 	val2 = val2 / 2;
 	typedef std::numeric_limits< double > dbl;
 	std::cout.precision(dbl::max_digits10);
-	double answer = step * (val2 + (*sum) + val3);
+	double answer = step * (val2 + sum + val3);
 	std::cout << answer << std::endl;
 
-	rv = cudaFree(sum);
+	rv = cudaFree(sum_array);
 	assert(rv == cudaSuccess);
 	free(sum_temp);
 
