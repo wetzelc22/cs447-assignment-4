@@ -1,1 +1,5 @@
 # cs447-assignment-4
+
+To run the program I used the "srun -c1 --partition=gpu --pty bash" then to make the executable is just "nvcc monte.cu" and then to execute is "./a.out a b num threads" where a is the lower bound b is the upper bound, num is the total number of steps in the integration and threads is the number of threads you want.  You can run 1 to 36 threads with "make run_many"
+
+Results: So interestingly this version of assignment 1 actually runs a bit slower however speedup is much cleaner with CUDA.  I think it is slower due to the amount of system time used with the CUDA implentation compared to the 0s of sys time in my original implementation.  This is likely to do with the time needed to switch back and forth from the gpu to cpu and transfering memory between the host and the device.  
